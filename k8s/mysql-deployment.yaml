@@ -1,0 +1,105 @@
+# ------------------- #
+#       SECRET        #
+# ------------------- #
+# For sensitive data like passwords.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mysql-secret
+  namespace: microservices
+type: Opaque
+stringData:
+  # It's best practice to change this password
+  MYSQL_ROOT_PASSWORD: "password"
+
+---
+# ------------------- #
+#      CONFIGMAP      #
+# ------------------- #
+# For non-sensitive configuration data.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-config
+  namespace: microservices
+data:
+  MYSQL_DATABASE: "microservices_db"
+
+---
+# ------------------- #
+# PERSISTENT STORAGE  #
+# ------------------- #
+# Requests storage from the cluster to save your data.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pvc
+  namespace: microservices
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+# ------------------- #
+#     DEPLOYMENT      #
+# ------------------- #
+# Runs the MySQL container and pulls config from the Secret and ConfigMap.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+  namespace: microservices
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql # <-- This label is used by the Service
+    spec:
+      containers:
+      - name: mysql
+        image: mysql:8
+        ports:
+        - containerPort: 3306
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: MYSQL_ROOT_PASSWORD
+        - name: MYSQL_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: mysql-config
+              key: MYSQL_DATABASE
+        volumeMounts:
+        - name: mysql-storage
+          mountPath: /var/lib/mysql
+      volumes:
+      - name: mysql-storage
+        persistentVolumeClaim:
+          claimName: mysql-pvc
+
+---
+# ------------------- #
+#       SERVICE       #
+# ------------------- #
+# Creates the stable network hostname "mysql-service".
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-service
+  namespace: microservices
+spec:
+  selector:
+    app: mysql # <-- Selects the pod with the matching label from the Deployment
+  ports:
+    - port: 3306
+      targetPort: 3306
+  type: ClusterIP
