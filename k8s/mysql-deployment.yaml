@@ -1,7 +1,3 @@
-# ------------------- #
-#       SECRET        #
-# ------------------- #
-# For sensitive data like passwords.
 apiVersion: v1
 kind: Secret
 metadata:
@@ -9,14 +5,10 @@ metadata:
   namespace: microservices
 type: Opaque
 stringData:
-  # It's best practice to change this password
   MYSQL_ROOT_PASSWORD: "password"
 
 ---
-# ------------------- #
-#      CONFIGMAP      #
-# ------------------- #
-# For non-sensitive configuration data.
+
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -26,10 +18,7 @@ data:
   MYSQL_DATABASE: "microservices_db"
 
 ---
-# ------------------- #
-# PERSISTENT STORAGE  #
-# ------------------- #
-# Requests storage from the cluster to save your data.
+
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -43,10 +32,7 @@ spec:
       storage: 1Gi
 
 ---
-# ------------------- #
-#     DEPLOYMENT      #
-# ------------------- #
-# Runs the MySQL container and pulls config from the Secret and ConfigMap.
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -60,7 +46,7 @@ spec:
   template:
     metadata:
       labels:
-        app: mysql # <-- This label is used by the Service
+        app: mysql 
     spec:
       containers:
       - name: mysql
@@ -87,10 +73,7 @@ spec:
           claimName: mysql-pvc
 
 ---
-# ------------------- #
-#       SERVICE       #
-# ------------------- #
-# Creates the stable network hostname "mysql-service".
+
 apiVersion: v1
 kind: Service
 metadata:
@@ -98,7 +81,7 @@ metadata:
   namespace: microservices
 spec:
   selector:
-    app: mysql # <-- Selects the pod with the matching label from the Deployment
+    app: mysql
   ports:
     - port: 3306
       targetPort: 3306
