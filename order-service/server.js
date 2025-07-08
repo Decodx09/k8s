@@ -7,7 +7,6 @@ const axios = require('axios');
 const app = express();
 const PORT = process.env.PORT || 3003;
 
-// Prometheus metrics
 const register = new promClient.Registry();
 promClient.collectDefaultMetrics({ register });
 

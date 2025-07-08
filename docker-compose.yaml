@@ -1,11 +1,9 @@
 version: '3.8'
 
-# It's best practice to define a top-level network for all services
 networks:
   microservices-net:
     driver: bridge
-
-# Define persistent volumes
+net
 volumes:
   mysql_data:
   grafana_data:
@@ -16,7 +14,6 @@ services:
     container_name: mysql-2
     restart: unless-stopped
     environment:
-      # For production, use a .env file and ${MYSQL_ROOT_PASSWORD} to avoid hardcoding secrets
       MYSQL_ROOT_PASSWORD: password
       MYSQL_DATABASE: microservices_db
     ports:
@@ -25,7 +22,6 @@ services:
       - mysql_data:/var/lib/mysql
     networks:
       - microservices-net
-    # This healthcheck ensures other services wait until MySQL is actually ready
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       timeout: 10s
@@ -92,7 +88,6 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      # This relative path is correct, assuming prometheus.yml is in the same folder
       - ./prometheus.yaml:/etc/prometheus/prometheus.yml 
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'

@@ -31,10 +31,3 @@ spec:
             name: order-service
             port:
               number: 3003
-      - path: /notifications
-        pathType: Prefix
-        backend:
-          service:
-            name: notification-service
-            port:
-              number: 3004

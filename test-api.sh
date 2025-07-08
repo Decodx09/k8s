@@ -10,7 +10,7 @@ kubectl port-forward -n microservices svc/notification-service 3004:3004 &
 sleep 5
 
 echo "Creating a user..."
-curl -X POST http://localhost:3001/users \
+curl -X POST http://localhost:8080/users \
   -H "Content-Type: application/json" \
   -d '{"name": "John Doe", "email": "john@example.com"}'
 
