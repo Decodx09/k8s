@@ -1,0 +1,39 @@
+# app-rbac.yaml - Create this new file
+
+# 1. A ServiceAccount to give an identity to your application pods.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: app-service-account
+  namespace: microservices
+
+---
+
+# 2. A Role that defines permissions.
+# This example allows pods to view other pods and services in the same namespace.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: app-role
+  namespace: microservices
+rules:
+- apiGroups: [""] # "" indicates the core API group
+  resources: ["pods", "services"]
+  verbs: ["get", "list", "watch"]
+
+---
+
+# 3. A RoleBinding that connects the Role to your ServiceAccount.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: app-role-binding
+  namespace: microservices
+subjects:
+- kind: ServiceAccount
+  name: app-service-account
+  namespace: microservices
+roleRef:
+  kind: Role
+  name: app-role
+  apiGroup: rbac.authorization.k8s.io
