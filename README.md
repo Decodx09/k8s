@@ -1,4 +1,3 @@
-Project Summary
 This project focuses on deploying and managing stateful and stateless applications within a Kubernetes cluster. Starting from basic setups, it evolved into a production-grade system architecture—demonstrating practical skills and deep understanding of Kubernetes core concepts.
 
 Practical Implementation Highlights
