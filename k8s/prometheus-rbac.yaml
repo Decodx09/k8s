@@ -36,3 +36,20 @@ roleRef:
   kind: ClusterRole
   name: prometheus-cr
   apiGroup: rbac.authorization.k8s.io
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus-service # This is the name for your new service
+  namespace: microservices
+  labels:
+    app: prometheus # This label should match the label on your prometheus deployment
+spec:
+  selector:
+    app: prometheus # This MUST match the label on your prometheus pod
+  ports:
+    - protocol: TCP
+      port: 9090       # The port the service will be available on inside the cluster
+      targetPort: 9090 # The port the prometheus container is listening on

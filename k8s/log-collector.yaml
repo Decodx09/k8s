@@ -1,0 +1,137 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fluentd-config
+  namespace: microservices
+data:
+  fluentd.conf: |
+    <source>
+      @type tail
+      path /var/log/containers/*microservices*.log
+      pos_file /var/log/fluentd-containers.log.pos
+      tag kubernetes.*
+      read_from_head true
+      <parse>
+        @type json
+        time_format %Y-%m-%dT%H:%M:%S.%NZ
+      </parse>
+    </source>
+
+    <filter kubernetes.**>
+      @type kubernetes_metadata
+      @id filter_kube_metadata
+    </filter>
+
+    <filter kubernetes.**>
+      @type grep
+      <regexp>
+        key $.kubernetes.namespace_name
+        pattern ^microservices$
+      </regexp>
+    </filter>
+
+    <match kubernetes.**>
+      @type stdout
+      <format>
+        @type json
+      </format>
+    </match>
+
+---
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: fluentd-service-account
+  namespace: microservices
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: fluentd-cluster-role
+rules:
+- apiGroups: [""]
+  resources: ["pods", "namespaces"]
+  verbs: ["get", "list", "watch"]
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: fluentd-cluster-role-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: fluentd-cluster-role
+subjects:
+- kind: ServiceAccount
+  name: fluentd-service-account
+  namespace: microservices
+
+---
+
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: microservices-log-collector
+  namespace: microservices
+  labels:
+    app: microservices-log-collector
+spec:
+  selector:
+    matchLabels:
+      app: microservices-log-collector
+  template:
+    metadata:
+      labels:
+        app: microservices-log-collector
+    spec:
+      serviceAccountName: fluentd-service-account
+      containers:
+      - name: fluentd
+        image: fluent/fluentd-kubernetes-daemonset:v1-debian-elasticsearch
+        env:
+        - name: FLUENTD_SYSTEMD_CONF
+          value: "disable"
+        - name: FLUENTD_CONF
+          value: "fluentd.conf"
+        resources:
+          requests:
+            memory: "200Mi"
+            cpu: "100m"
+          limits:
+            memory: "500Mi"
+            cpu: "200m"
+        volumeMounts:
+        - name: varlog
+          mountPath: /var/log
+        - name: varlibdockercontainers
+          mountPath: /var/lib/docker/containers
+          readOnly: true
+        - name: fluentd-config
+          mountPath: /fluentd/etc/fluentd.conf
+          subPath: fluentd.conf
+        - name: log-storage
+          mountPath: /fluentd/log
+      volumes:
+      - name: varlog
+        hostPath:
+          path: /var/log
+      - name: varlibdockercontainers
+        hostPath:
+          path: /var/lib/docker/containers
+      - name: fluentd-config
+        configMap:
+          name: fluentd-config
+      - name: log-storage
+        emptyDir: {}
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      - key: node-role.kubernetes.io/control-plane
+        effect: NoSchedule
+      nodeSelector:
+        kubernetes.io/os: linux
