@@ -1,3 +1,7 @@
+
+<img width="793" height="526" alt="Screenshot 2025-07-16 at 2 32 31 AM" src="https://github.com/user-attachments/assets/43d256af-911b-433f-be0e-4f7910435dd0" />
+
+
 This project focuses on deploying and managing stateful and stateless applications within a Kubernetes cluster. Starting from basic setups, it evolved into a production-grade system architecture—demonstrating practical skills and deep understanding of Kubernetes core concepts.
 
 Practical Implementation Highlights
