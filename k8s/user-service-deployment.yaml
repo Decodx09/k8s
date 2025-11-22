@@ -4,7 +4,15 @@ metadata:
   name: user-service
   namespace: microservices
 spec:
-  replicas: 1
+  replicas: 2 #increased it to 2 for High Availability
+  
+  # 1. STRATEGY: Zero-downtime configuration
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1        # Spin up 1 new pod before deleting old
+      maxUnavailable: 0  # Ensure 100% capacity during update
+      
   selector:
     matchLabels:
       app: user-service
@@ -16,10 +24,45 @@ spec:
       serviceAccountName: app-service-account
       containers:
       - name: user-service
-        image: user-service:latest
-        imagePullPolicy: Never
+        image: user-service:latest # PRO TIP: Use specific tags (v1, v2) in prod, not 'latest'
+        
+        # 2. EKS FIX: 'Never' only works locally. EKS needs to pull from ECR/DockerHub.
+        imagePullPolicy: Always 
+        
         ports:
         - containerPort: 3001
+        
+        # 3. HPA REQUIREMENT: HPA cannot calculate 25% utilization without a base request value.
+        resources:
+          requests:
+            cpu: "100m"   # Baseline for HPA calculation
+            memory: "128Mi"
+          limits:
+            cpu: "500m"   # Cap to prevent noisy neighbor issues
+            memory: "256Mi"
+
+        # 4. TRAFFIC SAFETY: Don't send traffic until app is ready
+        readinessProbe:
+          httpGet:
+            path: / # Change this to your health check endpoint (e.g., /health)
+            port: 3001
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          
+        # 5. AUTO-HEALING: Restart pod if it deadlocks
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 3001
+          initialDelaySeconds: 15
+          periodSeconds: 20
+
+        # 6. CONNECTION DRAINING: Helps AWS Load Balancer deregister cleanly
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh", "-c", "sleep 5"]
+
         env:
         - name: DB_HOST
           value: mysql-service

@@ -13,7 +13,7 @@ spec:
       labels:
         app: order-service
     spec:
-      serviceAccountName: app-service-account
+      serviceAccountName: app-service-account #RBAC thing Role Based Access Control
       containers:
       - name: order-service
         image: order-service:latest
